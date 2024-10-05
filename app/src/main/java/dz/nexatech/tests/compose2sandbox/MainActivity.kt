@@ -67,11 +67,11 @@ fun GreetingPreview() {
 @Composable
 fun Counter() {
     var count by remember { mutableIntStateOf(0) }
-    Btn (
+    Btn(
         modifier = Modifier.padding(5.dp),
         onClick = { count += 1 }
     ) {
-        Text("Count: $count")
+        Text("Count: $count", Modifier.hints())
     }
 }
 
@@ -88,14 +88,14 @@ fun Btn(
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     content: @Composable RowScope.() -> Unit
 ) = Button(
-        onClick = onClick,
-        modifier = modifier,
-        enabled = enabled,
-        shape = shape,
-        colors = colors,
-        elevation = elevation,
-        border = border,
-        contentPadding = contentPadding,
-        interactionSource = interactionSource,
-        content = content
-    )
+    onClick = onClick,
+    modifier = modifier.hints(),
+    enabled = enabled,
+    shape = shape,
+    colors = colors,
+    elevation = elevation,
+    border = border,
+    contentPadding = contentPadding,
+    interactionSource = interactionSource,
+    content = content
+)
