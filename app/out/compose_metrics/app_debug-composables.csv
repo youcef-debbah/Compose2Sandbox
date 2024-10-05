@@ -1,5 +1,0 @@
-package,name,composable,skippable,restartable,readonly,inline,isLambda,hasDefaults,defaultsGroup,groups,calls,
-dz.nexatech.tests.compose2sandbox.Greeting,Greeting,1,1,1,0,0,0,0,0,1,1,
-dz.nexatech.tests.compose2sandbox.GreetingPreview,GreetingPreview,1,1,1,0,0,0,0,0,1,1,
-dz.nexatech.tests.compose2sandbox.Counter,Counter,1,1,1,0,0,0,0,0,1,1,
-dz.nexatech.tests.compose2sandbox.ui.theme.Compose2SandboxTheme,Compose2SandboxTheme,1,1,1,0,0,0,1,0,3,3,
