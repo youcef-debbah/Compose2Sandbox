@@ -101,6 +101,7 @@ dependencies {
     debugImplementation(libs.compose.ui.tooling)
     debugImplementation(libs.compose.ui.test)
     implementation(libs.compose.tracing)
+    implementation(libs.kotlin.immutable)
 }
 
 tasks.clean {

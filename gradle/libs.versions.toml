@@ -13,6 +13,8 @@ compose-bom = "2024.09.03"
 compose-activity = "1.9.2"
 runtime-tracing = "1.7.3"
 
+kotlin-immutable = "0.3.8"
+
 [libraries]
 androidx-core = { group = "androidx.core", name = "core-ktx", version.ref = "androidx-core" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -30,6 +32,8 @@ compose-ui-test = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 compose-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 compose-tracing = { group = "androidx.compose.runtime", name = "runtime-tracing", version.ref = "runtime-tracing" }
+
+kotlin-immutable = { module = "org.jetbrains.kotlinx:kotlinx-collections-immutable", version.ref = "kotlin-immutable" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
