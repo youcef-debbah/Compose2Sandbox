@@ -21,7 +21,7 @@ android {
 
     defaultConfig {
         applicationId = "dz.nexatech.tests.compose2sandbox"
-        minSdk = 23
+        minSdk = 24
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
