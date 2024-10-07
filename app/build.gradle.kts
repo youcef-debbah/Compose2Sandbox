@@ -102,6 +102,7 @@ dependencies {
     debugImplementation(libs.compose.ui.test)
     implementation(libs.compose.tracing)
     implementation(libs.kotlin.immutable)
+    implementation("com.google.accompanist:accompanist-drawablepainter:0.36.0")
 }
 
 tasks.clean {

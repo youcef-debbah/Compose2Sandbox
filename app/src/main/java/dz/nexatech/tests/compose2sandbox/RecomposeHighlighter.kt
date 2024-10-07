@@ -38,7 +38,8 @@ import kotlin.math.min
  * size and interpolates from red to green as more recompositions occur before a timeout.
  */
 @Stable
-fun Modifier.hints(): Modifier = this.then(recomposeModifier)
+fun Modifier.hints(): Modifier = this
+//    .then(recomposeModifier)
 
 // Use a single instance + @Stable to ensure that recompositions can enable skipping optimizations
 // Modifier.composed will still remember unique data per call site.
