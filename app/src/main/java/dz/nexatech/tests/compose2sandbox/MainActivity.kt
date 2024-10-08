@@ -146,6 +146,7 @@ class MainActivity : ComponentActivity() {
             val height = 150.dp
 
             withContext(Dispatchers.Main) {
+                reportFullyDrawn()
                 setContent {
                     val anime: InfiniteTransition =
                         rememberInfiniteTransition(label = "DrawAnimation")
