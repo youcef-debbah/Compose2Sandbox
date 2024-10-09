@@ -36,7 +36,7 @@ import androidx.compose.ui.unit.dp
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import kotlin.random.Random
 
-const val RECT_COUNT = 1000
+const val RECT_COUNT = 1200
 const val RANGE_PX = 32
 const val WIDTH_PX = 32f
 
