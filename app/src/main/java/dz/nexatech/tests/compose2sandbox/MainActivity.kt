@@ -45,12 +45,13 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.random.Random
 
-const val rangePx = 16
-const val rectCount = 1000
-const val widthPx = 20f
+const val RECT_COUNT = 1000
+const val RANGE_PX = 16
+const val WIDTH_PX = 20f
 
-const val halfRangePx = rangePx.ushr(1)
-const val heightPx = widthPx + halfRangePx
+const val HALF_RECT_COUNT = RECT_COUNT.ushr(1)
+const val HALF_RANG_PX = RANGE_PX.ushr(1)
+const val HEIGHT_PX = WIDTH_PX + HALF_RANG_PX
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -66,30 +67,30 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch(Dispatchers.IO) {
             val background = Color.Blue
 //            val foreground = Color(0xFFED1C24)
-            val foreground = Color.Red
+            val foreground1 = Color.Red
             val foreground2 = Color.Green
 
-            val width = Dp(widthPx / density)
-            val height = Dp(heightPx / density)
-            val sizePx = Size(widthPx, widthPx)
+            val width = Dp(WIDTH_PX / density)
+            val height = Dp(HEIGHT_PX / density)
+            val sizePx = Size(WIDTH_PX, WIDTH_PX)
 
-            val offsets: Array<Array<Offset>> = Array(rectCount) { _ ->
-                val initOffset = Random.nextInt(0, rangePx)
-                Array(rangePx) { index ->
-                    val i = (index + initOffset) % rangePx
-                    val d = if (i > halfRangePx) rangePx - i else i
-                    Offset(0f, d.toFloat())
-                }
-            }
+//            val offsetsPx: Array<FloatArray> = Array(rectCount) { _ ->
+//                val initOffset = Random.nextInt(0, rangePx)
+//                FloatArray(rangePx) { index ->
+//                    val i = (index + initOffset) % rangePx
+//                    val d = if (i > halfRangePx) rangePx - i else i
+//                    d.toFloat()
+//                }
+//            }
 
-            val offsetsPx: Array<FloatArray> = Array(rectCount) { _ ->
-                val initOffset = Random.nextInt(0, rangePx)
-                FloatArray(rangePx) { index ->
-                    val i = (index + initOffset) % rangePx
-                    val d = if (i > halfRangePx) rangePx - i else i
-                    d.toFloat()
-                }
-            }
+//            val offsets: Array<Array<Offset>> = Array(rectCount) { _ ->
+//                val initOffset = Random.nextInt(0, rangePx)
+//                Array(rangePx) { index ->
+//                    val i = (index + initOffset) % rangePx
+//                    val d = if (i > halfRangePx) rangePx - i else i
+//                    Offset(0f, d.toFloat())
+//                }
+//            }
 
             withContext(Dispatchers.Main) {
                 reportFullyDrawn()
@@ -106,20 +107,26 @@ class MainActivity : ComponentActivity() {
                         ),
                     )
 
-                    AnimatedGrid(
-                        rectCount = rectCount,
+                    PrecomputedViewGrid(
                         cycle = cycle,
-                        offsetsPx = offsetsPx,
                         background = background,
-                        foreground = foreground,
-                        widthPx = widthPx,
-                        heightPx = heightPx,
-                        rectSizePx = sizePx,
-                        foreground2 = foreground2
+                        foreground1 = foreground1,
+                        foreground2 = foreground2,
+                        foregroundSize = sizePx
                     )
 
-//                    RectGrid(
-//                        rectCount = rectCount,
+//                    SingleViewGrid(
+//                        cycle = cycle,
+//                        offsetsPx = offsetsPx,
+//                        background = background,
+//                        foreground = foreground1,
+//                        widthPx = widthPx,
+//                        heightPx = heightPx,
+//                        rectSizePx = sizePx,
+//                        foreground2 = foreground2
+//                    )
+
+//                    FlowGridRects(
 //                        cycle = cycle,
 //                        offsets = offsets,
 //                        background = background,
@@ -158,8 +165,98 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun AnimatedGrid(
-    rectCount: Int,
+private fun PrecomputedViewGrid(
+    cycle: State<Float>,
+    background: Color,
+    foreground1: Color,
+    foreground2: Color,
+    foregroundSize: Size,
+) {
+    Spacer(
+        Modifier
+            .fillMaxSize()
+            .drawWithCache {
+                val columns: Int = (size.width / WIDTH_PX).toInt()
+                val rows: Int = RECT_COUNT / columns
+
+                val starts1 = IntArray(RECT_COUNT) { Random.nextInt(RANGE_PX) }
+                val starts2 = IntArray(RECT_COUNT) { Random.nextInt(RANGE_PX) }
+
+                val allOffsets1: Array<Array<Offset>> = Array(RANGE_PX) { _ ->
+                    Array(RECT_COUNT - HALF_RECT_COUNT) { _ -> Offset.Zero }
+                }
+
+                val allOffsets2: Array<Array<Offset>> = Array(RANGE_PX) { _ ->
+                    Array(HALF_RECT_COUNT) { _ -> Offset.Zero }
+                }
+
+                for (frameIndex in 0 until RANGE_PX) {
+                    var x = 0f
+                    var y = 0f
+                    var i1 = 0
+                    var i2 = 0
+                    repeat(rows) {
+                        for (c in 0 until columns) {
+                            if (c and 1 == 0) {
+                                allOffsets1[frameIndex][i1] =
+                                    Offset(x, y + starts1[i1].plus(frameIndex).mod(RANGE_PX).revRange())
+                                i1++
+                            } else {
+                                allOffsets2[frameIndex][i2] =
+                                    Offset(x, y + starts2[i2].plus(frameIndex).mod(RANGE_PX).revRange())
+                                i2++
+                            }
+                            x += WIDTH_PX
+                        }
+                        y += HEIGHT_PX
+                        x = 0f
+                    }
+
+                    for (c in 0 until RECT_COUNT % columns) {
+                        if (c and 1 == 0) {
+                            allOffsets1[frameIndex][i1] =
+                                Offset(x, y + starts1[i1].plus(frameIndex).mod(RANGE_PX).revRange())
+                            i1++
+                        } else {
+                            allOffsets2[frameIndex][i2] =
+                                Offset(x, y + starts2[i2].plus(frameIndex).mod(RANGE_PX).revRange())
+                            i2++
+                        }
+                        x += WIDTH_PX
+                    }
+                }
+
+                onDrawWithContent {
+                    drawRect(color = background, Offset.Zero, size = size)
+
+                    val frameIndex = (cycle.value * RANGE_PX).toInt()
+                    val offsets1Px = allOffsets1[frameIndex]
+                    val offsets2Px = allOffsets2[frameIndex]
+
+                    for (offset in offsets1Px) {
+                        drawRect(
+                            color = foreground1,
+                            topLeft = offset,
+                            size = foregroundSize
+                        )
+                    }
+
+                    for (offset in offsets2Px) {
+                        drawRect(
+                            color = foreground2,
+                            topLeft = offset,
+                            size = foregroundSize
+                        )
+                    }
+                }
+            }
+    )
+}
+
+private fun Int.revRange() = if (this > HALF_RANG_PX) RANGE_PX - this else this
+
+@Composable
+private fun SingleViewGrid(
     cycle: State<Float>,
     offsetsPx: Array<FloatArray>,
     background: Color,
@@ -174,14 +271,14 @@ private fun AnimatedGrid(
             .fillMaxSize()
             .drawWithCache {
                 val columns: Int = (size.width / widthPx).toInt()
-                val rows: Int = rectCount / columns
+                val rows: Int = RECT_COUNT / columns
                 onDrawWithContent {
                     drawRect(color = background, Offset.Zero, size = size)
                     var x = 0f
                     var y = 0f
                     var id = 0
                     val frameIndex = cycle.value
-                        .times(rangePx)
+                        .times(RANGE_PX)
                         .toInt()
                     repeat(rows) {
                         for (c in 0 until columns) {
@@ -196,7 +293,7 @@ private fun AnimatedGrid(
                         x = 0f
                     }
 
-                    for (c in 0 until rectCount % columns) {
+                    for (c in 0 until RECT_COUNT % columns) {
                         drawRect(
                             topLeft = Offset(x, y + offsetsPx[id++][frameIndex]),
                             color = if (c and 1 == 0) foreground else foreground2,
@@ -210,8 +307,7 @@ private fun AnimatedGrid(
 }
 
 @Composable
-private fun RectGrid(
-    rectCount: Int,
+private fun FlowGridRects(
     cycle: State<Float>,
     offsets: Array<Array<Offset>>,
     background: Color,
@@ -224,7 +320,7 @@ private fun RectGrid(
     FlowRow {
         DrawRectAnimationTraced(cycle, offsets, background, foreground, width, height, rectSizePx)
         DrawRectAnimation(cycle, offsets, background, foreground, width, height, rectSizePx, 1)
-        for (id in 2 until rectCount step 2) {
+        for (id in 2 until RECT_COUNT step 2) {
             DrawRectAnimation(cycle, offsets, background, foreground, width, height, rectSizePx, id)
             DrawRectAnimation(
                 cycle,
@@ -265,7 +361,7 @@ private fun DrawRectAnimationTraced(
                 drawRect(
                     color = foreground,
                     topLeft = offsets[0][index.value
-                        .times(rangePx)
+                        .times(RANGE_PX)
                         .toInt()],
                     size = RectSizePx
                 )
@@ -297,7 +393,7 @@ private fun DrawRectAnimation(
                 drawRect(
                     color = foreground,
                     topLeft = offsets[id][index.value
-                        .times(rangePx)
+                        .times(RANGE_PX)
                         .toInt()],
                     size = RectSizePx
                 )
@@ -321,7 +417,7 @@ private fun DrawFramesAnimation(
             .drawWithContent {
                 drawImage(
                     frames[index.value
-                        .times(rangePx)
+                        .times(RANGE_PX)
                         .toInt()]
                 )
             }
