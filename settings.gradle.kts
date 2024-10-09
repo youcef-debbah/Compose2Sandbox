@@ -23,3 +23,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "Compose2Sandbox"
 include(":app")
+include(":macro-benchmark")
