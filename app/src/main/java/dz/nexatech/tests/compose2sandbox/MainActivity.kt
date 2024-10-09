@@ -46,9 +46,10 @@ import kotlinx.coroutines.withContext
 import kotlin.random.Random
 
 const val rangePx = 16
+const val rectCount = 1000
+const val widthPx = 20f
+
 const val halfRangePx = rangePx.ushr(1)
-const val rectCount = 6
-const val widthPx = 300f
 const val heightPx = widthPx + halfRangePx
 
 class MainActivity : ComponentActivity() {
@@ -70,7 +71,6 @@ class MainActivity : ComponentActivity() {
 
             val width = Dp(widthPx / density)
             val height = Dp(heightPx / density)
-            val size = Size(width.value, width.value)
             val sizePx = Size(widthPx, widthPx)
 
             val offsets: Array<Array<Offset>> = Array(rectCount) { _ ->
@@ -82,8 +82,13 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            val offsetsPx: IntArray = IntArray(rectCount) {
-                Random.nextInt(0, rangePx)
+            val offsetsPx: Array<FloatArray> = Array(rectCount) { _ ->
+                val initOffset = Random.nextInt(0, rangePx)
+                FloatArray(rangePx) { index ->
+                    val i = (index + initOffset) % rangePx
+                    val d = if (i > halfRangePx) rangePx - i else i
+                    d.toFloat()
+                }
             }
 
             withContext(Dispatchers.Main) {
@@ -112,6 +117,18 @@ class MainActivity : ComponentActivity() {
                         rectSizePx = sizePx,
                         foreground2 = foreground2
                     )
+
+//                    RectGrid(
+//                        rectCount = rectCount,
+//                        cycle = cycle,
+//                        offsets = offsets,
+//                        background = background,
+//                        foreground = foreground,
+//                        width = width,
+//                        height = height,
+//                        rectSizePx = sizePx,
+//                        foreground2 = foreground2
+//                    )
 
 //                    Row(
 //                        horizontalArrangement = Arrangement.Absolute.Center,
@@ -144,7 +161,7 @@ class MainActivity : ComponentActivity() {
 private fun AnimatedGrid(
     rectCount: Int,
     cycle: State<Float>,
-    offsetsPx: IntArray,
+    offsetsPx: Array<FloatArray>,
     background: Color,
     foreground: Color,
     widthPx: Float,
@@ -161,19 +178,16 @@ private fun AnimatedGrid(
                 onDrawWithContent {
                     drawRect(color = background, Offset.Zero, size = size)
                     var x = 0f
-                    var y = cycle.value
-                    var i = 0
-                    for (r in 0 until rows) {
-                        for (c in 0 until columns step 2) {
+                    var y = 0f
+                    var id = 0
+                    val frameIndex = cycle.value
+                        .times(rangePx)
+                        .toInt()
+                    repeat(rows) {
+                        for (c in 0 until columns) {
                             drawRect(
-                                topLeft = Offset(x, y + offsetsPx[i++]),
-                                color = foreground,
-                                size = rectSizePx
-                            )
-                            x += widthPx
-                            drawRect(
-                                topLeft = Offset(x, y + offsetsPx[i++]),
-                                color = foreground2,
+                                topLeft = Offset(x, y + offsetsPx[id++][frameIndex]),
+                                color = if (c.and(1) == 0) foreground else foreground2,
                                 size = rectSizePx
                             )
                             x += widthPx
@@ -182,16 +196,10 @@ private fun AnimatedGrid(
                         x = 0f
                     }
 
-                    for (c in 0 until rectCount % columns step 2) {
+                    for (c in 0 until rectCount % columns) {
                         drawRect(
-                            topLeft = Offset(x, y + offsetsPx[i++]),
-                            color = foreground,
-                            size = rectSizePx
-                        )
-                        x += widthPx
-                        drawRect(
-                            topLeft = Offset(x, y + offsetsPx[i++]),
-                            color = foreground2,
+                            topLeft = Offset(x, y + offsetsPx[id++][frameIndex]),
+                            color = if (c and 1 == 0) foreground else foreground2,
                             size = rectSizePx
                         )
                         x += widthPx
@@ -210,14 +218,14 @@ private fun RectGrid(
     foreground: Color,
     width: Dp,
     height: Dp,
-    RectSizePx: Size,
+    rectSizePx: Size,
     foreground2: Color,
 ) {
     FlowRow {
-        DrawRectAnimationTraced(cycle, offsets, background, foreground, width, height, RectSizePx)
-        DrawRectAnimation(cycle, offsets, background, foreground, width, height, RectSizePx, 1)
+        DrawRectAnimationTraced(cycle, offsets, background, foreground, width, height, rectSizePx)
+        DrawRectAnimation(cycle, offsets, background, foreground, width, height, rectSizePx, 1)
         for (id in 2 until rectCount step 2) {
-            DrawRectAnimation(cycle, offsets, background, foreground, width, height, RectSizePx, id)
+            DrawRectAnimation(cycle, offsets, background, foreground, width, height, rectSizePx, id)
             DrawRectAnimation(
                 cycle,
                 offsets,
@@ -225,7 +233,7 @@ private fun RectGrid(
                 foreground2,
                 width,
                 height,
-                RectSizePx,
+                rectSizePx,
                 id + 1
             )
         }
