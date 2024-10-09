@@ -16,6 +16,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
@@ -24,9 +25,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.draw.drawWithContent
@@ -45,9 +51,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.random.Random
 
-const val RECT_COUNT = 1000
-const val RANGE_PX = 16
-const val WIDTH_PX = 20f
+const val RECT_COUNT = 512
+const val RANGE_PX = 50
+const val WIDTH_PX = 50f
 
 const val HALF_RECT_COUNT = RECT_COUNT.ushr(1)
 const val HALF_RANG_PX = RANGE_PX.ushr(1)
@@ -74,11 +80,13 @@ class MainActivity : ComponentActivity() {
             val height = Dp(HEIGHT_PX / density)
             val sizePx = Size(WIDTH_PX, WIDTH_PX)
 
-//            val offsetsPx: Array<FloatArray> = Array(rectCount) { _ ->
-//                val initOffset = Random.nextInt(0, rangePx)
-//                FloatArray(rangePx) { index ->
-//                    val i = (index + initOffset) % rangePx
-//                    val d = if (i > halfRangePx) rangePx - i else i
+            val allOffsets = calcOffsets(res.displayMetrics.widthPixels)
+
+//            val offsetsPx: Array<FloatArray> = Array(RECT_COUNT) { _ ->
+//                val initOffset = Random.nextInt(0, RANGE_PX)
+//                FloatArray(RANGE_PX) { index ->
+//                    val i = (index + initOffset) % RANGE_PX
+//                    val d = if (i > HALF_RANG_PX) RANGE_PX - i else i
 //                    d.toFloat()
 //                }
 //            }
@@ -108,6 +116,7 @@ class MainActivity : ComponentActivity() {
                     )
 
                     PrecomputedViewGrid(
+                        allOffsets = allOffsets,
                         cycle = cycle,
                         background = background,
                         foreground1 = foreground1,
@@ -120,8 +129,8 @@ class MainActivity : ComponentActivity() {
 //                        offsetsPx = offsetsPx,
 //                        background = background,
 //                        foreground = foreground1,
-//                        widthPx = widthPx,
-//                        heightPx = heightPx,
+//                        widthPx = WIDTH_PX,
+//                        heightPx = HEIGHT_PX,
 //                        rectSizePx = sizePx,
 //                        foreground2 = foreground2
 //                    )
@@ -164,8 +173,63 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+private fun calcOffsets(widthPx: Int): Pair<Array<Array<Offset>>, Array<Array<Offset>>> {
+    val columns: Int = (widthPx / WIDTH_PX).toInt()
+    val rows: Int = RECT_COUNT / columns
+
+    val starts1 = IntArray(RECT_COUNT) { Random.nextInt(RANGE_PX) }
+    val starts2 = IntArray(RECT_COUNT) { Random.nextInt(RANGE_PX) }
+
+    val allOffsets1: Array<Array<Offset>> = Array(RANGE_PX) { _ ->
+        Array(RECT_COUNT) { _ -> Offset.Zero }
+    }
+
+    val allOffsets2: Array<Array<Offset>> = Array(RANGE_PX) { _ ->
+        Array(RECT_COUNT) { _ -> Offset.Zero }
+    }
+
+    for (frameIndex in 0 until RANGE_PX) {
+        var x = 0f
+        var y = 0f
+        var i1 = 0
+        var i2 = 0
+        repeat(rows) {
+            for (c in 0 until columns) {
+                if (c and 1 == 0) {
+                    allOffsets1[frameIndex][i1] =
+                        Offset(x, y + starts1[i1].plus(frameIndex).mod(RANGE_PX).revRange())
+                    i1++
+                } else {
+                    allOffsets2[frameIndex][i2] =
+                        Offset(x, y + starts2[i2].plus(frameIndex).mod(RANGE_PX).revRange())
+                    i2++
+                }
+                x += WIDTH_PX
+            }
+            y += HEIGHT_PX
+            x = 0f
+        }
+
+        for (c in 0 until RECT_COUNT % columns) {
+            if (c and 1 == 0) {
+                allOffsets1[frameIndex][i1] =
+                    Offset(x, y + starts1[i1].plus(frameIndex).mod(RANGE_PX).revRange())
+                i1++
+            } else {
+                allOffsets2[frameIndex][i2] =
+                    Offset(x, y + starts2[i2].plus(frameIndex).mod(RANGE_PX).revRange())
+                i2++
+            }
+            x += WIDTH_PX
+        }
+    }
+
+    return Pair(allOffsets1, allOffsets2)
+}
+
 @Composable
 private fun PrecomputedViewGrid(
+    allOffsets: Pair<Array<Array<Offset>>, Array<Array<Offset>>>,
     cycle: State<Float>,
     background: Color,
     foreground1: Color,
@@ -175,79 +239,27 @@ private fun PrecomputedViewGrid(
     Spacer(
         Modifier
             .fillMaxSize()
-            .drawWithCache {
-                val columns: Int = (size.width / WIDTH_PX).toInt()
-                val rows: Int = RECT_COUNT / columns
+            .drawWithContent {
+                drawRect(color = background, Offset.Zero, size = size)
 
-                val starts1 = IntArray(RECT_COUNT) { Random.nextInt(RANGE_PX) }
-                val starts2 = IntArray(RECT_COUNT) { Random.nextInt(RANGE_PX) }
+                val frameIndex = (cycle.value * RANGE_PX).toInt()
+                val offsets1Px = allOffsets.first[frameIndex]
+                val offsets2Px = allOffsets.second[frameIndex]
 
-                val allOffsets1: Array<Array<Offset>> = Array(RANGE_PX) { _ ->
-                    Array(RECT_COUNT - HALF_RECT_COUNT) { _ -> Offset.Zero }
+                for (offset in offsets1Px) {
+                    drawRect(
+                        color = foreground1,
+                        topLeft = offset,
+                        size = foregroundSize
+                    )
                 }
 
-                val allOffsets2: Array<Array<Offset>> = Array(RANGE_PX) { _ ->
-                    Array(HALF_RECT_COUNT) { _ -> Offset.Zero }
-                }
-
-                for (frameIndex in 0 until RANGE_PX) {
-                    var x = 0f
-                    var y = 0f
-                    var i1 = 0
-                    var i2 = 0
-                    repeat(rows) {
-                        for (c in 0 until columns) {
-                            if (c and 1 == 0) {
-                                allOffsets1[frameIndex][i1] =
-                                    Offset(x, y + starts1[i1].plus(frameIndex).mod(RANGE_PX).revRange())
-                                i1++
-                            } else {
-                                allOffsets2[frameIndex][i2] =
-                                    Offset(x, y + starts2[i2].plus(frameIndex).mod(RANGE_PX).revRange())
-                                i2++
-                            }
-                            x += WIDTH_PX
-                        }
-                        y += HEIGHT_PX
-                        x = 0f
-                    }
-
-                    for (c in 0 until RECT_COUNT % columns) {
-                        if (c and 1 == 0) {
-                            allOffsets1[frameIndex][i1] =
-                                Offset(x, y + starts1[i1].plus(frameIndex).mod(RANGE_PX).revRange())
-                            i1++
-                        } else {
-                            allOffsets2[frameIndex][i2] =
-                                Offset(x, y + starts2[i2].plus(frameIndex).mod(RANGE_PX).revRange())
-                            i2++
-                        }
-                        x += WIDTH_PX
-                    }
-                }
-
-                onDrawWithContent {
-                    drawRect(color = background, Offset.Zero, size = size)
-
-                    val frameIndex = (cycle.value * RANGE_PX).toInt()
-                    val offsets1Px = allOffsets1[frameIndex]
-                    val offsets2Px = allOffsets2[frameIndex]
-
-                    for (offset in offsets1Px) {
-                        drawRect(
-                            color = foreground1,
-                            topLeft = offset,
-                            size = foregroundSize
-                        )
-                    }
-
-                    for (offset in offsets2Px) {
-                        drawRect(
-                            color = foreground2,
-                            topLeft = offset,
-                            size = foregroundSize
-                        )
-                    }
+                for (offset in offsets2Px) {
+                    drawRect(
+                        color = foreground2,
+                        topLeft = offset,
+                        size = foregroundSize
+                    )
                 }
             }
     )
