@@ -1,11 +1,8 @@
-@file:OptIn(ExperimentalLayoutApi::class)
-
 package dz.nexatech.tests.compose2sandbox
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.material3.Text
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
