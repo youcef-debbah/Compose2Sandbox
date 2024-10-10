@@ -8,7 +8,7 @@ plugins {
 
 android {
     signingConfigs {
-        create("release") {
+        register("release") {
             storeFile =
                 file("C:\\Users\\Administrator\\Documents\\main docs\\keystores\\test\\TestStore.jks")
             storePassword = "123456789"
@@ -29,13 +29,24 @@ android {
     }
 
     buildTypes {
-        release {
+        debug {
+            isDebuggable = true
+            isProfileable = true
             isMinifyEnabled = false
+            isShrinkResources = false
+            isCrunchPngs = false
+        }
+        release {
+            isDebuggable = false
+            isProfileable = true
+            isMinifyEnabled = true
+            isShrinkResources = true
+            isCrunchPngs = true
+            signingConfig = signingConfigs.named("release").get()
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("debug")
         }
         create("benchmark") {
             initWith(buildTypes.getByName("release"))
